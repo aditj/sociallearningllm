@@ -38,22 +38,22 @@ obs_dist = perturbed_identity(X,0.02)
 print(obs_dist)
 assert obs_dist.shape == (X, O)
 
+### utility matrix
 utility = np.random.rand(X,A)
 utility = np.identity(X)
-
 assert utility.shape == (X, A)
 
-public_belief = np.random.rand(X,1)
-public_belief = public_belief/public_belief.sum()
-assert public_belief.shape == (X, 1)
 
 grid_size = 100
 public_belief_grid = np.linspace(0, 1, grid_size)
 time_range = np.arange(1000)
 actions_taken = np.zeros((grid_size,time_range[-1]+1))
+state_trajectory = np.zeros((grid_size,time_range[-1]+1))
+observations = np.zeros((grid_size,time_range[-1]+1))
 RUN_EXP = 1
 if RUN_EXP:
     for i, public_belief_0 in tqdm.tqdm(enumerate(public_belief_grid)):
+        ### reset public belief
         public_belief = np.zeros((X,1))
         for state_var_1 in range(intensity_state):
             for state_var_2 in range(type_state):
@@ -80,6 +80,8 @@ if RUN_EXP:
             # print(t, state, obs, public_belief.flatten(),action, sep="\t")
             # print(t,state,obs,action)
             actions_taken[i,t] = action
+            state_trajectory[i,t] = state
+            observations[i,t] = obs
     np.save("actions_taken.npy",actions_taken)
 actions_taken = np.load("actions_taken.npy")
 zero_counts = (actions_taken == 0).sum(axis=1)
