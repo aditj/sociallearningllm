@@ -27,13 +27,15 @@ X =  flag_state*intensity_state*type_state ### number of states
 A = X ### number of actions
 O = X ### number of observations
 P = np.identity(X) ### transition matrix
-P = perturbed_identity(X,0.1)
+P = perturbed_identity(X,0.05)
+print(P)
 state_var = [0,0,0]
 state = state_var[0]*intensity_state*type_state + state_var[1]*type_state + state_var[2]
 
 obs_dist = np.random.rand(X,O)
 obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-obs_dist = perturbed_identity(X,0.1)
+obs_dist = perturbed_identity(X,0.02)
+print(obs_dist)
 assert obs_dist.shape == (X, O)
 
 utility = np.random.rand(X,A)
