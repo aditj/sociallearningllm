@@ -21,33 +21,38 @@ def perturbed_identity(X,epsilon):
     return P
 
 flag_state = 2
-intensity_state = 2
+intensity_state = 4
 type_state = 1
 X =  flag_state*intensity_state*type_state ### number of states
 A = X ### number of actions
 O = X ### number of observations
 P = np.identity(X) ### transition matrix
 P = perturbed_identity(X,0)
+# P = np.array([[0.5,0,0.5,0],
+#      [0,0.5,0,0.5],
+#      [0.5,0,0.5,0],
+#         [0,0.5,0,0.5]])
 print(P)
 state_var = [0,0,0]
 state = state_var[0]*intensity_state*type_state + state_var[1]*type_state + state_var[2]
 
 obs_dist = np.random.rand(X,O)
 obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-obs_dist = perturbed_identity(X,0.2)
+obs_dist = perturbed_identity(X,0.05)
 print(obs_dist)
 assert obs_dist.shape == (X, O)
 
 ### utility matrix
 utility = np.random.rand(X,A)
-utility = np.identity(X)
+utility = perturbed_identity(X,0.1)
+utility = np.identity(X)*1
 assert utility.shape == (X, A)
 
 
 grid_size = 100
-public_belief_grid = np.linspace(0, 1, grid_size)
+public_belief_grid = np.linspace(0, 0.1, grid_size)
 time_range = np.arange(100)
-N_MC = 100
+N_MC = 10
 
 actions_taken = np.zeros((N_MC,grid_size,time_range[-1]+1))
 state_trajectory = np.zeros((N_MC,grid_size,time_range[-1]+1))
@@ -55,19 +60,17 @@ observations = np.zeros((N_MC,grid_size,time_range[-1]+1))
 RUN_EXP = 1
 if RUN_EXP:
     for mc in tqdm.tqdm(range(N_MC)):
+        intensity_state_init = 0
+
         for i, public_belief_0 in enumerate(public_belief_grid):
             ### reset public belief
             public_belief = np.zeros((X,1))
-            for state_var_1 in range(intensity_state):
-                for state_var_2 in range(type_state):
-                    public_belief[0*intensity_state*type_state + state_var_1*type_state + state_var_2] = public_belief_0/(intensity_state*type_state)
-                    public_belief[1*intensity_state*type_state + state_var_1*type_state + state_var_2] = (1 - public_belief_0)/(intensity_state*type_state)
-            public_belief = public_belief/public_belief.sum()    
-            intensity_state_init = np.random.choice(intensity_state)
+            public_belief[intensity_state_init*flag_state] = public_belief_0
+            public_belief[~(intensity_state_init*flag_state)] = (1-public_belief_0)/(X-1)
+            assert (public_belief.sum()-1) < 1e-10
             state = intensity_state_init*intensity_state
             for t in time_range:
                 state_trajectory[mc,i,t] = state
-
                 ### sample an observation
                 obs = np.random.choice(O, p=obs_dist[state,:])
                 ### observation belief
@@ -91,17 +94,14 @@ if RUN_EXP:
         np.save("state_trajectory.npy",state_trajectory)
         np.save("observations.npy",observations)
 actions_taken = np.load("actions_taken.npy")
-print(actions_taken)
-zero_counts = ((actions_taken == 2)).mean(axis=2).mean(axis=0)
-
-print(zero_counts)
+zero_counts = ((actions_taken == 0)|(actions_taken == 0)).mean(axis=2).mean(axis=0)
 import matplotlib.pyplot as plt
 plt.plot(public_belief_grid, zero_counts)
 plt.savefig("public_belief_grid.png")
 
 plt.figure()
 states = np.load("state_trajectory.npy")
-zero_state_counts = (states == 0).sum(axis=2).mean(axis=0)
+zero_state_counts = ((states == 0)|(states==2)).sum(axis=2).mean(axis=0)
 plt.plot(public_belief_grid, zero_state_counts)
 plt.savefig("public_belief_grid_state.png")
 
