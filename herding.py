@@ -21,13 +21,13 @@ def perturbed_identity(X,epsilon):
     return P
 
 flag_state = 2
-intensity_state = 2
+intensity_state = 5
 type_state = 1
 X =  flag_state*intensity_state*type_state ### number of states
 A = X ### number of actions
 O = X ### number of observations
 P = np.identity(X) ### transition matrix
-P = perturbed_identity(X,0.3)
+P = perturbed_identity(X,0)
 # P = np.array([[0.5,0,0.5,0],
 #      [0,0.5,0,0.5],
 #      [0.5,0,0.5,0],
@@ -38,19 +38,19 @@ state = state_var[0]*intensity_state*type_state + state_var[1]*type_state + stat
 
 obs_dist = np.random.rand(X,O)
 obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-obs_dist = perturbed_identity(X,0.5)
+obs_dist = perturbed_identity(X,0.4)
 print(obs_dist)
 assert obs_dist.shape == (X, O)
 
 ### utility matrix
 utility = np.random.rand(X,A)
-utility = perturbed_identity(X,5)
-utility = np.array([
-    [1,0.7,0.9,0.8],
-    [0.6,1,0.7,0.5],
-    [0.5,0.7,1,0.6],
-    [0.7,0.5,0.6,1]
-])
+utility = perturbed_identity(X,0.7)
+# utility = np.array([
+#     [1,0.7,0.9,0.8],
+#     [0.6,1,0.7,0.5],
+#     [0.5,0.7,1,0.6],
+#     [0.7,0.5,0.6,1]
+# ])
 # utility = np.identity(X)*1
 print(utility)
 assert utility.shape == (X, A)
@@ -100,24 +100,12 @@ if RUN_EXP:
                 # print(t,state,obs,action)
                 actions_taken[mc,i,t] = action
                 observations[mc,i,t] = obs
-        np.save("actions_taken.npy",actions_taken)
-        np.save("state_trajectory.npy",state_trajectory)
-        np.save("observations.npy",observations)
-actions_taken = np.load("actions_taken.npy")
+        np.save("parameters/actions_taken.npy",actions_taken)
+        np.save("parameters/state_trajectory.npy",state_trajectory)
+        np.save("parameters/observations.npy",observations)
+actions_taken = np.load("parameters/actions_taken.npy")
 zero_counts = actions_taken[:,:,-10:].mean(axis=2).mean(axis=0)
 print(actions_taken[:,:,-10:])
 import matplotlib.pyplot as plt
 plt.plot(public_belief_grid, zero_counts)
-plt.savefig("public_belief_grid.png")
-
-plt.figure()
-states = np.load("state_trajectory.npy")
-zero_state_counts = ((states == 0)|(states==2)).sum(axis=2).mean(axis=0)
-plt.plot(public_belief_grid, zero_state_counts)
-plt.savefig("public_belief_grid_state.png")
-
-plt.figure()
-obs = np.load("observations.npy")
-zero_obs_counts = (obs == 0).sum(axis=2).mean(axis=0)
-plt.plot(public_belief_grid, zero_obs_counts)
-plt.savefig("public_belief_grid_obs.png")
+plt.savefig("plots/public_belief_grid.png")
