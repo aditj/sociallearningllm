@@ -95,13 +95,13 @@ if RUN_EXP:
                 state = np.random.choice(X, p=P[state,:])
                 actions_taken[mc,i,t] = action
                 observations[mc,i,t] = obs
-        np.save("actions_taken_controlling.npy",actions_taken)
-actions_taken = np.load("actions_taken_controlling.npy")
+        np.save("parameters/actions_taken_controlling.npy",actions_taken)
+actions_taken = np.load("parameters/actions_taken_controlling.npy")
 zero_counts = actions_taken[:,:,-10:].mean(axis=2).mean(axis=0)
 print(actions_taken[:,:,-10:])
 import matplotlib.pyplot as plt
 plt.plot(public_belief_grid, zero_counts)
-plt.savefig("public_belief_grid_controlling.png")
+plt.savefig("plots/public_belief_grid_controlling.png")
 
 threshold_policy = lambda x,threshold: 0 if x < threshold else 1
 N_MC = 50
@@ -141,17 +141,21 @@ if RUN_EXP:
                     state = np.random.choice(X, p=P[state,:])
                     actions_taken[mc,i,thresholds.tolist().index(threshold),t] = action
 
-    np.save("actions_taken_herding.npy",actions_taken)
+    np.save("parameters/actions_taken_herding.npy",actions_taken)
 
-actions_taken = np.load("actions_taken_herding.npy")
+actions_taken = np.load("parameters/actions_taken_herding.npy")
 ### meshgrid for public belief and thresholds
 mesh = np.meshgrid(public_belief_grid,thresholds)
 
 
 import seaborn as sns
-print(actions_taken[0,22,22,:])
+sns.axes_style("darkgrid")
 plt.figure()
-sns.heatmap(actions_taken[0][:,:,:].sum(axis=2))
-plt.xlabel("Public Belief")
-plt.ylabel("Threshold")
-plt.savefig("public_belief_thresholds.png")
+sns.heatmap(actions_taken[0][:,:,:].sum(axis=2),cbar_kws={"label":"Pct. Flagged Non-Hate"})
+plt.xticks(range(0,50,4),np.round(public_belief_grid[::4],2),rotation=0)
+plt.yticks(range(0,50,4),np.round(public_belief_grid[::4],2),rotation=0)
+
+plt.xlabel("Public Belief $\pi$",fontdict={"size":18})
+
+plt.ylabel("Threshold $\gamma$",fontdict={"size":18})
+plt.savefig("plots/public_belief_thresholds.png")

@@ -45,67 +45,62 @@ assert obs_dist.shape == (X, O)
 ### utility matrix
 utility = np.random.rand(X,A)
 utility = perturbed_identity(X,0.7)
-# utility = np.array([
-#     [1,0.7,0.9,0.8],
-#     [0.6,1,0.7,0.5],
-#     [0.5,0.7,1,0.6],
-#     [0.7,0.5,0.6,1]
-# ])
-# utility = np.identity(X)*1
 print(utility)
 assert utility.shape == (X, A)
 
 
 grid_size = 20
 public_belief_grid = np.linspace(0, 1, grid_size)
-time_range = np.arange(100)
-N_MC = 1
+time_range = np.arange(40)
+N_MC = 100
+Xs = [0,1,3,5,7,9]
+len_Xs = len(Xs)
+actions_taken = np.zeros((N_MC,grid_size,len_Xs,time_range[-1]+1))
 
-actions_taken = np.zeros((N_MC,grid_size,time_range[-1]+1))
-state_trajectory = np.zeros((N_MC,grid_size,time_range[-1]+1))
-observations = np.zeros((N_MC,grid_size,time_range[-1]+1))
-RUN_EXP = 1
+RUN_EXP = 0
 if RUN_EXP:
     for mc in tqdm.tqdm(range(N_MC)):
-        intensity_state_init = 0
-        for i, public_belief_0 in enumerate(public_belief_grid):
-            ### reset public belief
-            public_belief = np.zeros((X,1))
-            public_belief[intensity_state_init*flag_state] = public_belief_0
+        for j,init_state in enumerate(Xs):
 
-            public_belief[2] =(1-public_belief_0)
-            assert (public_belief.sum()-1) < 1e-10
-            state = intensity_state_init*intensity_state
-            for t in time_range:
-                state_trajectory[mc,i,t] = state
-                ### sample an observation
-                obs = np.random.choice(O, p=obs_dist[state,:])
-                ### observation belief
-                obs_prob = np.diag(obs_dist[:,obs])
-                ### computing private belief
-                private_belief = obs_prob @ P.T @ public_belief
-                normalization_factor = np.ones((1, O)) @ obs_dist.T @ P.T @ public_belief
-                private_belief = private_belief / normalization_factor
-                ### action selection
-                action = np.argmax(utility.T @ private_belief)
-                ### update public belief
-                public_belief = T(public_belief,action,X,O,obs_dist,P,A,utility)
-                public_belief = public_belief / np.sum(public_belief)
-                ### update state
-                
-                state = np.random.choice(X, p=P[state,:])
-                
-                if t == 9999:
-                    print(t, state, obs, public_belief.flatten(),action, sep="\t")
-                # print(t,state,obs,action)
-                actions_taken[mc,i,t] = action
-                observations[mc,i,t] = obs
-        np.save("parameters/actions_taken.npy",actions_taken)
-        np.save("parameters/state_trajectory.npy",state_trajectory)
-        np.save("parameters/observations.npy",observations)
+            for i, public_belief_0 in enumerate(public_belief_grid):
+                ### reset public belief
+                public_belief = np.zeros((X,1))
+                public_belief[0] = public_belief_0
+        
+                public_belief[init_state] =(1-public_belief_0)
+                assert (public_belief.sum()-1) < 1e-10
+                state = init_state
+                for t in time_range:
+                    ### sample an observation
+                    obs = np.random.choice(O, p=obs_dist[state,:])
+                    ### observation belief
+                    obs_prob = np.diag(obs_dist[:,obs])
+                    ### computing private belief
+                    private_belief = obs_prob @ P.T @ public_belief
+                    normalization_factor = np.ones((1, O)) @ obs_dist.T @ P.T @ public_belief
+                    private_belief = private_belief / normalization_factor
+                    ### action selection
+                    action = np.argmax(utility.T @ private_belief)
+                    ### update public belief
+                    public_belief = T(public_belief,action,X,O,obs_dist,P,A,utility)
+                    public_belief = public_belief / np.sum(public_belief)
+                    ### update state
+                    
+                    state = np.random.choice(X, p=P[state,:])
+                    
+                    # print(t,state,obs,action)
+                    actions_taken[mc,i,j,t] = action
+            np.save("parameters/actions_taken.npy",actions_taken)
 actions_taken = np.load("parameters/actions_taken.npy")
-zero_counts = actions_taken[:,:,-10:].mean(axis=2).mean(axis=0)
-print(actions_taken[:,:,-10:])
+zero_counts = actions_taken[:,:,-10:].mean(axis=3).mean(axis=0)
+print(actions_taken[:,:,-10:].mean(axis=3).mean(axis=0))
+import seaborn as sns
+labels = ["[0,0]","[1,1]","[1,2]","[1,3]","[1,4]","[1,5]"]
+sns.axes_style("darkgrid")
 import matplotlib.pyplot as plt
-plt.plot(public_belief_grid, zero_counts)
+plt.plot(public_belief_grid,zero_counts,label=labels )
+plt.xlabel("Public Belief $\pi$",fontdict={"size":18})
+plt.ylabel("Action $a$",fontdict={"size":18})
+plt.yticks(Xs,labels)
+plt.legend(title="Underlying State")
 plt.savefig("plots/public_belief_grid.png")
