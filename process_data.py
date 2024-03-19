@@ -46,6 +46,6 @@ def process_response_string(response_string):
     return json.loads(response_string.replace('\\n','\n').split('\n\n',1)[0].replace(" ","").replace("\n","").lower().replace("true",'"true"').replace("false",'"false"'))
 
 final_english_df['response'] = final_english_df['text'].apply(return_obs)
-final_english_df.to_csv("outputcsv.csv")
+final_english_df.to_csv("./data/outputcsv.csv")
 
 
