@@ -25,19 +25,20 @@ intensity_state = 5
 type_state = 1
 X =  flag_state*intensity_state*type_state ### number of states
 A = X ### number of actions
-O = 32 ### number of observations
+O = 64 ### number of observations
 P = np.identity(X) ### transition matrix
 P = perturbed_identity(X,0)
 
 ### observation distribution
-obs_dist = np.random.rand(X,O)
+obs_dist = np.load("parameters/obs_probabilities.npy").T
+obs_dist = np.concatenate([obs_dist[0,:].reshape(1,-1),np.ones((intensity_state-1,O))*1e-7,obs_dist[1:,:]],axis=0)
 obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-obs_dist = np.repeat(perturbed_identity(X,0.4),O//X,axis=1) 
-obs_dist = np.concatenate([np.zeros((X,1)),np.zeros((X,1)),obs_dist],axis=1)
+# obs_dist = np.repeat(perturbed_identity(X,1),O//X,axis=1) 
+# obs_dist = np.concatenate([np.zeros((X,1)),np.zeros((X,1)),obs_dist],axis=1)
 
-obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
+# obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
 
-print(obs_dist.shape)
+print(obs_dist)
 assert obs_dist.shape == (X, O)
 
 ### utility matrix
@@ -49,9 +50,9 @@ assert utility.shape == (X, A)
 
 grid_size = 20
 public_belief_grid = np.linspace(0, 1, grid_size)
-time_range = np.arange(40)
-N_MC = 100
-Xs = [0,1,3,5,7,9]
+time_range = np.arange(20)
+N_MC = 1
+Xs = [0,5,6,7,8,9]
 len_Xs = len(Xs)
 actions_taken = np.zeros((N_MC,grid_size,len_Xs,time_range[-1]+1))
 
