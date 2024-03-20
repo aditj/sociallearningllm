@@ -20,25 +20,40 @@ def perturbed_identity(X,epsilon):
     P = P / P.sum(axis=1)[:,None]
     return P
 
-flag_state = 2
-intensity_state = 5
+flag_state = 6
+intensity_state = 1
 type_state = 1
 X =  flag_state*intensity_state*type_state ### number of states
 A = X ### number of actions
-O = 64 ### number of observations
+O = 6 ### number of observations
 P = np.identity(X) ### transition matrix
 P = perturbed_identity(X,0)
 
 ### observation distribution
-obs_dist = np.load("parameters/obs_probabilities.npy").T
-obs_dist = np.concatenate([obs_dist[0,:].reshape(1,-1),np.ones((intensity_state-1,O))*1e-7,obs_dist[1:,:]],axis=0)
-obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-# obs_dist = np.repeat(perturbed_identity(X,1),O//X,axis=1) 
-# obs_dist = np.concatenate([np.zeros((X,1)),np.zeros((X,1)),obs_dist],axis=1)
-
-# obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
-
+obs_dist_numpy = np.load("parameters/obs_probs.npy")
+obs_dist = np.zeros((X,O))
+# ### get binary valued vectors for 64
+indices = np.arange(2**5)
+binary_indices = np.array([list(bin(i)[2:].zfill(6)) for i in indices]).astype(int)
+obs_dist[:,0] = obs_dist_numpy[:,::2].sum(axis=1)
+obs_dist_numpy = obs_dist_numpy[:,1::2]
+for i in range(O):
+#     ### filter out indices which have only things less than i 1
+    
+    obs_dist[:,i] = obs_dist_numpy[:,binary_indices[:,i+1:].sum(axis=1)==0].sum(axis=1)
 print(obs_dist)
+
+# obs_dist[:,1] = obs_dist_numpy[:,obs_dist_numpy[:,::2]==0]
+# print()
+# print(obs_dist[:,1::2][:,::2].sum(axis=1))
+# exit()
+# obs_dist = np.repeat(perturbed_identity(X,0.2),O//X,axis=1) 
+# obs_dist = np.concatenate([np.zeros((X,1)),np.zeros((X,1)),np.zeros((X,1)),np.zeros((X,1)),obs_dist],axis=1)
+
+obs_dist = obs_dist/obs_dist.sum(axis=1)[:,None]
+
+print(obs_dist.shape)
+
 assert obs_dist.shape == (X, O)
 
 ### utility matrix
@@ -50,16 +65,16 @@ assert utility.shape == (X, A)
 
 grid_size = 20
 public_belief_grid = np.linspace(0, 1, grid_size)
-time_range = np.arange(20)
-N_MC = 1
-Xs = [0,5,6,7,8,9]
+time_range = np.arange(200)
+N_MC = 10
+Xs = [0,1,2,3,4,5]
 len_Xs = len(Xs)
 actions_taken = np.zeros((N_MC,grid_size,len_Xs,time_range[-1]+1))
 
 RUN_EXP = 1
 if RUN_EXP:
     for mc in tqdm.tqdm(range(N_MC)):
-        for j,init_state in enumerate(Xs):
+        for j,init_state in tqdm.tqdm(enumerate(Xs)):
 
             for i, public_belief_0 in enumerate(public_belief_grid):
                 ### reset public belief
@@ -72,6 +87,10 @@ if RUN_EXP:
                 for t in time_range:
                     ### sample an observation
                     obs = np.random.choice(O, p=obs_dist[state,:])
+                    if state != 0:
+                        if np.random.uniform() <0.6:
+                            obs = 0
+                        
                     ### observation belief
                     obs_prob = np.diag(obs_dist[:,obs])
                     ### computing private belief
@@ -91,8 +110,8 @@ if RUN_EXP:
                     actions_taken[mc,i,j,t] = action
             np.save("parameters/actions_taken.npy",actions_taken)
 actions_taken = np.load("parameters/actions_taken.npy")
-zero_counts = actions_taken[:,:,-10:].mean(axis=3).mean(axis=0)
-print(actions_taken[:,:,-10:].mean(axis=3).mean(axis=0))
+zero_counts = actions_taken[:,:,:,-10:].mean(axis=3).mean(axis=0)
+print(actions_taken[:,:,:,-10:].mean(axis=3).mean(axis=0))
 import seaborn as sns
 labels = ["[0,0]","[1,1]","[1,2]","[1,3]","[1,4]","[1,5]"]
 sns.axes_style("darkgrid")

@@ -63,43 +63,59 @@ class RBM(nn.Module):
 
 def main():
     # Hyperparameters
-    num_visible = 12
-    num_hidden = 8
+    num_visible = 6
+    num_hidden = 4
     num_epochs = 100
-
+    
+    
     # Create RBM model
-    model = RBM(num_visible, num_hidden)
 
     # Sample data (replace with your actual training data)
     data = pd.read_csv("./data/output_csv_cleaned.csv").values
-    data_binary = data[:,1:]    
-    data_non_binary = data[:,0]
+    n_classes = np.unique(data[:,0]).shape[0]
+    for j in tqdm.tqdm(range(n_classes)):
+        data_class = data[data[:,0]==j]
+        print(data_class.shape)
+        data_binary_class = data_class[:,1:]
+        data_binary_class = torch.tensor(data_binary_class).float()
+        model = RBM(num_visible, num_hidden)
+
+        model.train(data_binary_class, epochs=num_epochs)
+        ### save model
+        torch.save(model.state_dict(), f"./parameters/model_rbm_{j}.pth")
+    
     ### use ohe for non-binary data
-    data_ohe = pd.get_dummies(data_non_binary).values
-    data = torch.tensor(np.concatenate([data_binary,data_ohe],axis=1)).float()
-    data = torch.tensor(data).float()
-    print(data.shape)
+    
     # Train the RBM
 
-    model.train(data, epochs=num_epochs)
-    ### save model
-    torch.save(model.state_dict(), "./parameters/model_rbm.pth")
-    
     # ... (rest of the code for sample generation)
 
 if __name__ == "__main__":
     if 0: 
         main()
     else:
-        num_visible = 12
-        num_hidden = 8
-        model = RBM(num_visible, num_hidden)
-        model.load_state_dict(torch.load("./parameters/model_rbm.pth"))
-        v = torch.bernoulli(torch.ones(1, num_visible))
-        num_samples = 10000
-        samples = torch.zeros(num_samples, num_visible)
+        num_visible = 6
+        num_hidden = 4
+        num_classes = 6
+        num_obs_vars = 6
+        obs_probs = np.zeros((num_classes, 2**num_obs_vars))
 
-        for _ in tqdm.tqdm(range(num_samples)):
-            samples[_] = model.gibbs_sampling(v.clone(), num_iters=100) 
-        np.save("parameters/samples.npy",samples.numpy())
-        print(samples[samples[:,6]==1].mean(0))   
+        for j in range(num_classes):
+            model = RBM(num_visible, num_hidden)
+            model.load_state_dict(torch.load(f"./parameters/model_rbm_{j}.pth"))
+            v = torch.bernoulli(torch.ones(1, num_visible))
+            num_samples = 1000
+            samples = torch.zeros(num_samples, num_visible)
+
+            for _ in tqdm.tqdm(range(num_samples)):
+                samples[_] = model.gibbs_sampling(v.clone(), num_iters=200) 
+
+            # np.save("parameters/samples.npy",samples.detach.numpy())
+            for _ in range(num_samples):
+                ### convert from binary to decimal
+                obs_sample = sum([2**i for i in range(num_obs_vars) if samples[_][i] == 1])
+                obs_probs[j,obs_sample] += 1
+            obs_probs[j] /= num_samples
+            print(obs_probs[j])
+            print(samples.mean(0))  
+        np.save("parameters/obs_probs.npy",obs_probs) 
