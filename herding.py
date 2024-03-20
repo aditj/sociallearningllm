@@ -98,8 +98,8 @@ labels = ["[0,0]","[1,1]","[1,2]","[1,3]","[1,4]","[1,5]"]
 sns.axes_style("darkgrid")
 import matplotlib.pyplot as plt
 plt.plot(public_belief_grid,zero_counts,label=labels )
-plt.xlabel("Public Belief $\pi$",fontdict={"size":18})
-plt.ylabel("Action $a$",fontdict={"size":18})
+plt.xlabel("Initial Public Belief $\pi$([0,0])",fontdict={"size":18})
+plt.ylabel("Average Action $a$ of last 10 agents",fontdict={"size":18})
 plt.yticks(Xs,labels)
 plt.legend(title="Underlying State")
 plt.savefig("plots/public_belief_grid.png")

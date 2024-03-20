@@ -155,7 +155,7 @@ sns.heatmap(actions_taken[0][:,:,:].sum(axis=2),cbar_kws={"label":"Pct. Flagged 
 plt.xticks(range(0,50,4),np.round(public_belief_grid[::4],2),rotation=0)
 plt.yticks(range(0,50,4),np.round(public_belief_grid[::4],2),rotation=0)
 
-plt.xlabel("Public Belief $\pi$",fontdict={"size":18})
+plt.xlabel("Initial Public Belief $\pi$(0)",fontdict={"size":18})
 
 plt.ylabel("Threshold $\gamma$",fontdict={"size":18})
 plt.savefig("plots/public_belief_thresholds.png")
