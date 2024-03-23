@@ -1,5 +1,7 @@
 import numpy as np
 import tqdm as tqdm
+import pandas as pd
+import matplotlib.pyplot as plt
 def p_a_public_belief(a,obs_dist,utility,obs,A,P,public_belief):
     flag = True
     obs_prob = np.diag(obs_dist[:,obs])
@@ -63,15 +65,18 @@ print(utility)
 assert utility.shape == (X, A)
 
 
-grid_size = 20
+grid_size = 100
 public_belief_grid = np.linspace(0, 1, grid_size)
-time_range = np.arange(200)
-N_MC = 10
+time_range = np.arange(10)
+N_MC = 50
 Xs = [0,1,2,3,4,5]
 len_Xs = len(Xs)
 actions_taken = np.zeros((N_MC,grid_size,len_Xs,time_range[-1]+1))
 
-RUN_EXP = 1
+
+data = pd.read_csv("./data/output_csv_cleaned.csv")
+
+RUN_EXP = 0
 if RUN_EXP:
     for mc in tqdm.tqdm(range(N_MC)):
         for j,init_state in tqdm.tqdm(enumerate(Xs)):
@@ -86,10 +91,13 @@ if RUN_EXP:
                 state = init_state
                 for t in time_range:
                     ### sample an observation
-                    obs = np.random.choice(O, p=obs_dist[state,:])
-                    if state != 0:
-                        if np.random.uniform() <0.6:
-                            obs = 0
+                    obs = data[data['state']==state].sample(1).values[0][1:]
+                    obs = np.concatenate([[obs[-1]],obs[:-1]])
+                
+                    obs = np.max(np.concatenate([np.nonzero(obs==1)[0].flatten(),[0]]))
+                    # if state != 0:
+                    #     if np.random.uniform() <0.6:
+                    #         obs = 0
                         
                     ### observation belief
                     obs_prob = np.diag(obs_dist[:,obs])
@@ -110,15 +118,21 @@ if RUN_EXP:
                     actions_taken[mc,i,j,t] = action
             np.save("parameters/actions_taken.npy",actions_taken)
 actions_taken = np.load("parameters/actions_taken.npy")
-zero_counts = actions_taken[:,:,:,-10:].mean(axis=3).mean(axis=0)
-print(actions_taken[:,:,:,-10:].mean(axis=3).mean(axis=0))
+zero_counts = actions_taken[:,:,:,:].mean(axis=3).mean(axis=0)
+print(actions_taken[:,:,:,:].mean(axis=3).mean(axis=0))
 import seaborn as sns
-labels = ["[0,0]","[1,1]","[1,2]","[1,3]","[1,4]","[1,5]"]
+### use latex for font rendering
+## use serif font
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+labels = ["0: Not Hate Speech Peddler (HSP)","1: HSP of Intensity 1","2: HSP of Intensity 2","3: HSP of Intensity 3","4: HSP of Intensity 4","5: HSP of Intensity 5"]
+labels_ticks = ["0","1","2","3","4","5"]
 sns.axes_style("darkgrid")
 import matplotlib.pyplot as plt
 plt.plot(public_belief_grid,zero_counts,label=labels )
-plt.xlabel("Initial Public Belief $\pi$([0,0])",fontdict={"size":18})
-plt.ylabel("Average Action $a$ of last 10 agents",fontdict={"size":18})
-plt.yticks(Xs,labels)
-plt.legend(title="Underlying State")
+plt.xlabel("Initial Prior Probability for state 0 (not-HSP)",fontdict={"size":18})
+plt.ylabel("Mean of the classification (action)\n by agents",fontdict={"size":18})
+plt.yticks(Xs,labels_ticks,fontsize=12)
+plt.xticks(fontsize=12)
+plt.legend(title="Underlying State: Description",title_fontsize="large",fontsize="medium")
 plt.savefig("plots/public_belief_grid.png")
