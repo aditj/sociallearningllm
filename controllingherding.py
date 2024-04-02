@@ -136,7 +136,7 @@ plt.xticks(range(0,grid_size,4),np.round(public_belief_grid[::4],2),rotation=0)
 plt.yticks(range(0,grid_size,4),np.round(public_belief_grid[::4],2),rotation=0)
 plt.xlabel("Initial Prior Probability for state 0 (not-HSP)",fontdict={"size":18})
 plt.ylabel("Threshold Parameter $\gamma$ of Control Policy",fontdict={"size":18})
-plt.text(12,4,"Herding",color = "white",fontsize=20)
+plt.text(14,6,"Herding",color = "white",fontsize=20)
 plt.savefig("plots/public_belief_thresholds.png")
 
 
