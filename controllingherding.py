@@ -155,3 +155,5 @@ for i in prior_idx:
         plt.plot(time_range,actions_taken.mean(0)[i,j,:],label=f"Initial Prior: {public_belief_grid[i]}, Threshold: {thresholds[j]}")
 plt.legend()
 plt.savefig("plots/thresholds.png")
+
+
